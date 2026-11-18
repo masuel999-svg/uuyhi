@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة بطاقات التحدي - قواعد اللغة الإنجليزية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        .en-text {
+            font-family: 'Poppins', sans-serif;
+            direction: ltr;
+            display: inline-block;
+        }
+        .card-container {
+            perspective: 1000px;
+        }
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .deck-card {
+            background: linear-gradient(145deg, #f59e0b, #d97706);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.5), 0 8px 10px -6px rgba(245, 158, 11, 0.1);
+            transition: all 0.3s ease;
+        }
+        .deck-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 20px 35px -5px rgba(245, 158, 11, 0.7);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 flex flex-col items-center justify-between">
+
+    <!-- Header & Stats -->
+    <header class="w-full max-w-5xl glass-panel rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-600 flex items-center justify-center text-2xl shadow-lg">
+                🃏
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-black text-amber-300">بطاقات التحدي والمفاجآت</h1>
+                <p class="text-xs md:text-sm text-indigo-200">60 سؤالاً متنوعاً + بطاقات حظ ومكافآت وعقوبات</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 md:gap-6 flex-wrap">
+            <div class="bg-indigo-950/60 px-4 py-2 rounded-xl border border-indigo-500/30 text-center">
+                <span class="block text-xs text-indigo-300">النقاط</span>
+                <span id="scoreDisplay" class="text-xl font-black text-emerald-400">0</span>
+            </div>
+            <div class="bg-indigo-950/60 px-4 py-2 rounded-xl border border-indigo-500/30 text-center">
+                <span class="block text-xs text-indigo-300">البطاقات المتبقية</span>
+                <span id="remainingDisplay" class="text-xl font-black text-amber-400">78</span>
+            </div>
+            <div class="bg-indigo-950/60 px-4 py-2 rounded-xl border border-indigo-500/30 text-center">
+                <span class="block text-xs text-indigo-300">الإجابات الصحيحة</span>
+                <span id="correctCountDisplay" class="text-xl font-black text-sky-400">0 / 60</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filter / Topic Selector -->
+    <div class="w-full max-w-5xl mb-6 flex flex-wrap items-center justify-center gap-2">
+        <button onclick="setTopicFilter('all')" id="btn-all" class="topic-btn active bg-amber-500 text-indigo-950 font-bold px-4 py-2 rounded-full text-sm transition shadow-md">
+            الكل (60 سؤال + مفاجآت)
+        </button>
+        <button onclick="setTopicFilter('1')" id="btn-1" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            1. استخدام the (المعالم والأماكن)
+        </button>
+        <button onclick="setTopicFilter('2')" id="btn-2" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            2. أداة التعريف the (المفرد والجمع)
+        </button>
+        <button onclick="setTopicFilter('3')" id="btn-3" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            3. أسماء الإشارة والأوامر
+        </button>
+        <button onclick="setTopicFilter('4')" id="btn-4" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            4. أدوات الاستفهام وحروف الجر
+        </button>
+        <button onclick="setTopicFilter('5')" id="btn-5" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            5. الأرقام والترتيب
+        </button>
+        <button onclick="setTopicFilter('6')" id="btn-6" class="topic-btn bg-white/10 hover:bg-white/20 text-white font-semibold px-3 py-2 rounded-full text-xs md:text-sm transition">
+            6. الفعل be وصفات الملكية
+        </button>
+    </div>
+
+    <!-- Main Game Area -->
+    <main class="w-full max-w-4xl flex-grow flex flex-col items-center justify-center my-2">
+        
+        <!-- Active Bonus Banner (if any) -->
+        <div id="activeEffectBanner" class="hidden w-full max-w-xl mb-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-xl text-center font-bold shadow-lg animate-pulse">
+            ⚡ تأثير نشط: مضاعفة النقاط للسؤال القادم!
+        </div>
+
+        <!-- Deck State (Draw Card) -->
+        <div id="deckArea" class="flex flex-col items-center justify-center text-center py-6">
+            <div onclick="drawCard()" class="deck-card floating cursor-pointer w-64 h-80 md:w-72 md:h-96 rounded-3xl p-6 flex flex-col items-center justify-between border-4 border-amber-200 relative select-none">
+                <div class="w-full flex justify-between text-indigo-950 font-black text-xl">
+                    <span>★</span>
+                    <span>؟</span>
+                </div>
+                <div class="my-auto flex flex-col items-center">
+                    <div class="text-6xl mb-4">🎴</div>
+                    <h2 class="text-2xl font-black text-indigo-950 mb-2">اسحب بطاقة!</h2>
+                    <p class="text-sm font-bold text-indigo-900/80">سؤال • مكافأة • أو عقاب</p>
+                </div>
+                <div class="w-full bg-indigo-950/20 py-2 rounded-xl text-indigo-950 font-bold text-sm">
+                    اضغط هنا للسحب
+                </div>
+            </div>
+            <button onclick="resetGame()" class="mt-8 text-xs text-indigo-300 hover:text-white underline transition">
+                إعادة خلط البطاقات وبدء اللعبة من جديد
+            </button>
+        </div>
+
+        <!-- Revealed Card Area -->
+        <div id="cardDisplayArea" class="hidden w-full max-w-2xl pop-in">
+            
+            <!-- QUESTION CARD -->
+            <div id="questionCard" class="hidden glass-panel rounded-3xl p-6 md:p-8 border-2 border-indigo-400/40 relative">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                    <span id="qTopicBadge" class="bg-indigo-600/80 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full">
+                        الموضوع
+                    </span>
+                    <span class="text-amber-300 font-bold text-sm">
+                        قيمة السؤال: <span id="qPointsValue">10</span> نقاط
+                    </span>
+                </div>
+
+                <div class="mb-6">
+                    <p id="qArabicPrompt" class="text-sm text-indigo-200 mb-2 font-semibold"></p>
+                    <h3 id="qText" class="text-xl md:text-2xl font-bold text-white leading-relaxed en-text w-full text-left bg-indigo-950/40 p-4 rounded-2xl border border-white/10">
+                        Question goes here
+                    </h3>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                    <!-- Options injected by JS -->
+                </div>
+
+                <!-- Feedback & Next Button -->
+                <div id="feedbackBox" class="hidden rounded-2xl p-4 mb-4 text-right">
+                    <p id="feedbackTitle" class="font-black text-lg mb-1"></p>
+                    <p id="feedbackExplanation" class="text-sm opacity-90"></p>
+                </div>
+
+                <div class="flex justify-end">
+                    <button id="nextCardBtn" onclick="returnToDeck()" class="hidden bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-indigo-950 font-black px-6 py-3 rounded-xl shadow-lg transition transform hover:scale-105">
+                        سحب البطاقة التالية 🃏
+                    </button>
+                </div>
+            </div>
+
+            <!-- REWARD CARD -->
+            <div id="rewardCard" class="hidden bg-gradient-to-br from-emerald-600 to-teal-800 rounded-3xl p-8 text-center border-4 border-emerald-300 shadow-2xl">
+                <div class="text-7xl mb-4 animate-bounce">🎁</div>
+                <span class="inline-block bg-emerald-950/50 text-emerald-200 px-4 py-1 rounded-full text-sm font-bold mb-3">
+                    بطاقة مكافأة!
+                </span>
+                <h2 id="rewardTitle" class="text-3xl font-black text-white mb-3">مكافأة رائعة!</h2>
+                <p id="rewardDesc" class="text-lg text-emerald-100 mb-6 leading-relaxed"></p>
+                <button onclick="applyRewardAndContinue()" class="bg-white text-emerald-900 font-black px-8 py-3 rounded-xl shadow-lg hover:bg-emerald-50 transition transform hover:scale-105">
+                    استلام المكافأة والمتابعة ✨
+                </button>
+            </div>
+
+            <!-- PENALTY CARD -->
+            <div id="penaltyCard" class="hidden bg-gradient-to-br from-rose-600 to-red-900 rounded-3xl p-8 text-center border-4 border-rose-300 shadow-2xl">
+                <div class="text-7xl mb-4 animate-pulse">💣</div>
+                <span class="inline-block bg-rose-950/60 text-rose-200 px-4 py-1 rounded-full text-sm font-bold mb-3">
+                    بطاقة عقاب وتحدي!
+                </span>
+                <h2 id="penaltyTitle" class="text-3xl font-black text-white mb-3">حظ أوفر!</h2>
+                <p id="penaltyDesc" class="text-lg text-rose-100 mb-6 leading-relaxed"></p>
+                <button onclick="applyPenaltyAndContinue()" class="bg-white text-rose-900 font-black px-8 py-3 rounded-xl shadow-lg hover:bg-rose-50 transition transform hover:scale-105">
+                    تنفيذ العقاب والمتابعة 💪
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverArea" class="hidden glass-panel rounded-3xl p-8 text-center max-w-lg pop-in">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 class="text-3xl font-black text-amber-300 mb-2">انتهت جميع البطاقات!</h2>
+            <p class="text-indigo-200 mb-6">لقد أتممت التحدي بنجاح، إليك نتيجتك النهائية:</p>
+            <div class="bg-indigo-950/60 rounded-2xl p-6 mb-6 border border-indigo-500/30">
+                <div class="text-4xl font-black text-emerald-400 mb-2" id="finalScore">0 نقطة</div>
+                <div class="text-sm text-indigo-300" id="finalStats">أجبت بشكل صحيح على 0 من 60 سؤال</div>
+            </div>
+            <button onclick="resetGame()" class="bg-gradient-to-r from-amber-400 to-orange-500 text-indigo-950 font-black px-8 py-3 rounded-xl shadow-lg hover:scale-105 transition">
+                العب مرة أخرى 🔄
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-indigo-300/70 mt-4">
+        تم تصميم الأسئلة خصيصاً بناءً على دروس الكتاب المدرسي (Super Goal 1)
+    </footer>
+
+    <script>
+        // 60 Questions (10 per image)
+        const allQuestions = [
+            // --- IMAGE 1: Use of 'the' (Unique objects, oceans, rivers, monuments, no 'the' with proper names/meals/sports/etc.) ---
+            {
+                id: 1, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ moon looks very bright tonight.',
+                options: ['The', 'A', 'An', 'No article (-)'],
+                correct: 'The',
+                explanation: 'نستخدم (the) مع الأشياء الفريدة من نوعها في الكون مثل القمر (the moon) والشمس (the sun).'
+            },
+            {
+                id: 2, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'We visited _____ Eiffel Tower in Paris last summer.',
+                options: ['no article (-)', 'a', 'the', 'an'],
+                correct: 'the',
+                explanation: 'نستخدم (the) قبل أسماء المعالم الشهيرة مثل برج إيفل (the Eiffel Tower).'
+            },
+            {
+                id: 3, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'My favorite sport is _____ football.',
+                options: ['the', 'a', 'no article (-)', 'an'],
+                correct: 'no article (-)',
+                explanation: 'لا نستخدم أداة التعريف (the) قبل أسماء الرياضات والألعاب مثل football.'
+            },
+            {
+                id: 4, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ Red Sea is located between Africa and Asia.',
+                options: ['A', 'An', 'No article (-)', 'The'],
+                correct: 'The',
+                explanation: 'نستخدم (the) قبل أسماء البحار والمحيطات والأنهار مثل البحر الأحمر (the Red Sea).'
+            },
+            {
+                id: 5, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'My father goes to _____ work at 7:00 AM every day.',
+                options: ['no article (-)', 'the', 'a', 'an'],
+                correct: 'no article (-)',
+                explanation: 'لا نستخدم (the) مع كلمات مثل (home, school, work) عندما تُستخدم لغرضها الأساسي.'
+            },
+            {
+                id: 6, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ Amazon is one of the longest rivers in the world.',
+                options: ['An', 'The', 'A', 'No article (-)'],
+                correct: 'The',
+                explanation: 'نستخدم (the) مع أسماء الأنهار مثل نهر الأمازون (the Amazon).'
+            },
+            {
+                id: 7, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'We usually have _____ breakfast at 6:30 in the morning.',
+                options: ['the', 'a', 'no article (-)', 'an'],
+                correct: 'no article (-)',
+                explanation: 'لا نستخدم (the) قبل أسماء الوجبات اليومية مثل breakfast, lunch, dinner.'
+            },
+            {
+                id: 8, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ Arabian Desert covers most of the Arabian Peninsula.',
+                options: ['No article (-)', 'A', 'An', 'The'],
+                correct: 'The',
+                explanation: 'نستخدم (the) قبل أسماء الصحاري مثل الصحراء العربية (the Arabian Desert).'
+            },
+            {
+                id: 9, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'My birthday is in _____ October.',
+                options: ['no article (-)', 'the', 'a', 'an'],
+                correct: 'no article (-)',
+                explanation: 'لا نستخدم (the) قبل أسماء الشهور وأيام الأسبوع.'
+            },
+            {
+                id: 10, topic: '1', topicName: 'استخدام the (المعالم والأماكن)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ United States is a large country in North America.',
+                options: ['A', 'The', 'No article (-)', 'An'],
+                correct: 'The',
+                explanation: 'نستخدم (the) قبل أسماء الدول التي تتكون من مجموع ولايات أو ممالك مثل (the United States).'
+            },
+
+            // --- IMAGE 2: The Definite Article 'the' (Singular & Plural, Specific vs General, Mentioned before) ---
+            {
+                id: 11, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'He is a tourist. _____ tourist is in New York.',
+                options: ['A', 'An', 'The', 'No article (-)'],
+                correct: 'The',
+                explanation: 'نستخدم (the) عند الإشارة إلى اسم تم ذكره سابقاً في الجملة الأولى (a tourist -> The tourist).'
+            },
+            {
+                id: 12, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة (التحدث بشكل عام):',
+                q: '_____ teachers work at schools.',
+                options: ['No article (-)', 'The', 'A', 'An'],
+                correct: 'No article (-)',
+                explanation: 'عند التحدث عن الأسماء الجمع بشكل عام (المعلمون عموماً) لا نستخدم (the).'
+            },
+            {
+                id: 13, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'Where are _____ students? They are at the art museum.',
+                options: ['a', 'an', 'no article (-)', 'the'],
+                correct: 'the',
+                explanation: 'هنا نتحدث عن طلاب محددين ومعروفين للسائل والمجيب، لذا نستخدم (the).'
+            },
+            {
+                id: 14, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: '_____ Earth revolves around the sun.',
+                options: ['The', 'A', 'An', 'No article (-)'],
+                correct: 'The',
+                explanation: 'كوكب الأرض (the Earth) شيء فريد من نوعه، لذلك يأخذ دائماً (the).'
+            },
+            {
+                id: 15, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'أي من الجمل التالية صحيحة قواعدياً؟',
+                q: 'Choose the grammatically correct sentence:',
+                options: [
+                    'The student is in class.',
+                    'The students is in class.',
+                    'A students are in class.',
+                    'An student is in class.'
+                ],
+                correct: 'The student is in class.',
+                explanation: 'أداة التعريف (the) تأتي قبل الأسماء المفردة (the student) والجمع (the students) بنفس الشكل.'
+            },
+            {
+                id: 16, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'I bought a new book yesterday. _____ book is very interesting.',
+                options: ['A', 'The', 'An', 'No article (-)'],
+                correct: 'The',
+                explanation: 'الكتاب أصبح معروفاً لأنه ذُكر في الجملة الأولى، فنستخدم (The).'
+            },
+            {
+                id: 17, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة (التحدث بشكل عام):',
+                q: 'I love _____ apples because they are healthy.',
+                options: ['the', 'a', 'no article (-)', 'an'],
+                correct: 'no article (-)',
+                explanation: 'الحديث هنا عن التفاح بشكل عام كفاكهة جمع، فلا نستخدم أداة تعريف.'
+            },
+            {
+                id: 18, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'Please close _____ door when you leave the room.',
+                options: ['a', 'an', 'no article (-)', 'the'],
+                correct: 'the',
+                explanation: 'الباب هنا محدد ومعروف (باب الغرفة التي نحن فيها)، لذا نستخدم (the).'
+            },
+            {
+                id: 19, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'اختر الإجابة الصحيحة لإكمال الجملة التالية:',
+                q: 'Look at _____ sky! It is full of stars.',
+                options: ['the', 'a', 'no article (-)', 'an'],
+                correct: 'the',
+                explanation: 'السماء (the sky) من الأشياء الفريدة من نوعها وتأخذ (the).'
+            },
+            {
+                id: 20, topic: '2', topicName: 'أداة التعريف the (المفرد والجمع)',
+                prompt: 'ما هي الترجمة الصحيحة لعبارة "the students"؟',
+                q: 'What does "the students" mean in Arabic?',
+                options: ['طالب واحد', 'الطلاب', 'طلاب (نكرة)', 'معلمون'],
+                correct: 'الطلاب',
+                explanation: 'كلمة (students) جمع، ووجود (the) يجعلها معرفة (الطلاب).'
+            },
+
+            // --- IMAGE 3: Demonstratives (This, That, These, Those) & Imperatives ---
+            {
+                id: 21, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر اسم الإشارة المناسب للمفرد القريب:',
+                q: '_____ school is near to my house.',
+                options: ['This', 'That', 'These', 'Those'],
+                correct: 'This',
+                explanation: 'كلمة (school) مفرد، وكلمة (near) تعني قريب، لذا نستخدم (This).'
+            },
+            {
+                id: 22, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر اسم الإشارة المناسب للجمع البعيد:',
+                q: 'Look at _____ trees over there in the park.',
+                options: ['this', 'these', 'those', 'that'],
+                correct: 'those',
+                explanation: 'كلمة (trees) جمع، و (over there) تدل على البعد، لذا نستخدم (those).'
+            },
+            {
+                id: 23, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر اسم الإشارة المناسب للجمع القريب:',
+                q: '_____ chairs in my class are red.',
+                options: ['That', 'This', 'Those', 'These'],
+                correct: 'These',
+                explanation: 'كلمة (chairs) جمع، وهي في فصلي (قريبة مني)، لذا نستخدم (These).'
+            },
+            {
+                id: 24, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر اسم الإشارة المناسب للمفرد البعيد:',
+                q: 'Look at _____ bird high up in the sky!',
+                options: ['that', 'this', 'these', 'those'],
+                correct: 'that',
+                explanation: 'الطائر (bird) مفرد وبعيد في السماء، لذا نستخدم (that).'
+            },
+            {
+                id: 25, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر صيغة الأمر المنفية الصحيحة:',
+                q: '_____ buy that painting. It is strange.',
+                options: ['Not', "Don't", "Doesn't", 'No'],
+                correct: "Don't",
+                explanation: 'لتكوين صيغة الأمر المنفية (النهي) في الإنجليزية نبدأ الجملة بـ (Don\'t) متبوعة بالفعل في المصدر.'
+            },
+            {
+                id: 26, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'كيف نجعل جملة الأمر أكثر تهذيباً؟',
+                q: 'How can you make the command "Sit down" more polite?',
+                options: [
+                    'You sit down',
+                    'Sitting down',
+                    'Please sit down',
+                    'Sit down now'
+                ],
+                correct: 'Please sit down',
+                explanation: 'نستخدم كلمة (Please) في بداية أو نهاية جملة الأمر لجعلها مهذبة.'
+            },
+            {
+                id: 27, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر الفعل المناسب لصيغة الأمر المثبتة:',
+                q: '_____ out. The weather is very good today.',
+                options: ['Going', 'Goes', 'Went', 'Go'],
+                correct: 'Go',
+                explanation: 'تبدأ جملة الأمر دائماً بالفعل في صورته الأساسية (المصدر بدون إضافات) مثل (Go).'
+            },
+            {
+                id: 28, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر اسم الإشارة الصحيح:',
+                q: 'I want to buy _____ goldfish right here.',
+                options: ['this', 'those', 'these', 'that'],
+                correct: 'this',
+                explanation: 'كلمة (goldfish) هنا مفرد وقريبة (right here)، فنستخدم (this).'
+            },
+            {
+                id: 29, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'اختر جملة النهي الصحيحة:',
+                q: '_____ go out. It is very hot today!',
+                options: ['No', "Don't", 'Not', "Isn't"],
+                correct: "Don't",
+                explanation: 'نستخدم (Don\'t + الفعل المصدر) لتقديم نصيحة أو أمر بالامتناع عن فعل شيء.'
+            },
+            {
+                id: 30, topic: '3', topicName: 'أسماء الإشارة والأوامر',
+                prompt: 'أي من الكلمات التالية تُستخدم للإشارة إلى "الجمع القريب"؟',
+                q: 'Which demonstrative pronoun is used for plural near objects?',
+                options: ['This', 'That', 'These', 'Those'],
+                correct: 'These',
+                explanation: '(This) للمفرد القريب، (That) للمفرد البعيد، (These) للجمع القريب، و(Those) للجمع البعيد.'
+            },
+
+            // --- IMAGE 4: Question Words (What, When, How old) & Prepositions (In, On) ---
+            {
+                id: 31, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر أداة الاستفهام المناسبة للسؤال عن العمر:',
+                q: '_____ is the building? It is 150 years old.',
+                options: ['How old', 'What', 'When', 'Where'],
+                correct: 'How old',
+                explanation: 'نستخدم (How old) للسؤال عن عمر شخص أو شيء.'
+            },
+            {
+                id: 32, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر حرف الجر المناسب مع الشهور:',
+                q: 'Our summer vacation is _____ May.',
+                options: ['on', 'at', 'in', 'to'],
+                correct: 'in',
+                explanation: 'نستخدم حرف الجر (in) مع الشهور والفصول والسنوات.'
+            },
+            {
+                id: 33, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر حرف الجر المناسب مع أيام الأسبوع:',
+                q: 'We play football _____ Mondays.',
+                options: ['in', 'on', 'at', 'of'],
+                correct: 'on',
+                explanation: 'نستخدم حرف الجر (on) مع أيام الأسبوع والتواريخ المحددة.'
+            },
+            {
+                id: 34, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر أداة الاستفهام الصحيحة:',
+                q: '_____ is the date tomorrow? It is January 20th.',
+                options: ['When', 'How old', 'Who', 'What'],
+                correct: 'What',
+                explanation: 'نستخدم (What) للسؤال عن التاريخ المحدد أو اليوم (What is the date / What day is...).'
+            },
+            {
+                id: 35, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر حرف الجر المناسب مع التواريخ الكاملة:',
+                q: 'The national day is _____ September 23rd.',
+                options: ['on', 'in', 'at', 'by'],
+                correct: 'on',
+                explanation: 'عندما يُذكر اليوم مع الشهر (تاريخ محدد)، نستخدم (on) وليس (in).'
+            },
+            {
+                id: 36, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر حرف الجر المناسب مع فصول السنة:',
+                q: 'Their football matches are _____ the winter.',
+                options: ['on', 'at', 'in', 'from'],
+                correct: 'in',
+                explanation: 'فصول السنة (winter, summer, spring, fall) تأخذ حرف الجر (in).'
+            },
+            {
+                id: 37, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر أداة الاستفهام المناسبة للسؤال عن الوقت العام:',
+                q: '_____ is your vacation? It is in July.',
+                options: ['How old', 'When', 'What day', 'Who'],
+                correct: 'When',
+                explanation: 'نستخدم (When) للسؤال عن معلومات عامة أو محددة عن الأيام والأسابيع والأشهر والفصول.'
+            },
+            {
+                id: 38, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر الاختصار الصحيح في الجملة التالية:',
+                q: 'What is the full form of "It\'s" in "It\'s January 20th"?',
+                options: ['It has', 'It was', 'It is', 'It are'],
+                correct: 'It is',
+                explanation: 'كلمة (It\'s) هنا هي اختصار لـ (It + is).'
+            },
+            {
+                id: 39, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'اختر أداة الاستفهام الصحيحة:',
+                q: '_____ day is your visit to the museum? On Thursday.',
+                options: ['When', 'How old', 'Where', 'What'],
+                correct: 'What',
+                explanation: 'عند وجود كلمة (day) بعد أداة الاستفهام مباشرة نستخدم (What day).'
+            },
+            {
+                id: 40, topic: '4', topicName: 'أدوات الاستفهام وحروف الجر',
+                prompt: 'أكمل الحوار التالي بالإجابة الصحيحة:',
+                q: 'A: How old are you?  B: _____.',
+                options: ['I am fifteen', 'In May', 'On Sunday', 'It is Monday'],
+                correct: 'I am fifteen',
+                explanation: 'السؤال بـ (How old) يتطلب إجابة توضح العمر.'
+            },
+
+            // --- IMAGE 5: Numbers (Cardinal & Ordinal) ---
+            {
+                id: 41, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'ما هو الرقم الترتيبي الصحيح للرقم (1)؟',
+                q: 'What is the ordinal number for 1 (1st)?',
+                options: ['first', 'oneth', 'one', 'once'],
+                correct: 'first',
+                explanation: 'الرقم الترتيبي للواحد (1st) هو (first) وهو رقم غير منتظم.'
+            },
+            {
+                id: 42, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الكتابة الصحيحة للرقم الترتيبي (12th):',
+                q: 'How do you spell the ordinal number 12th?',
+                options: ['twelveth', 'twelfth', 'twenty', 'twelve'],
+                correct: 'twelfth',
+                explanation: 'عند تحويل (twelve) إلى رقم ترتيبي نبدل (ve) بـ (f) ونضيف (th) لتصبح (twelfth).'
+            },
+            {
+                id: 43, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الاختصار الرقمي الصحيح لكلمة "twenty-third":',
+                q: 'Which number represents "twenty-third"?',
+                options: ['23th', '23st', '23rd', '23nd'],
+                correct: '23rd',
+                explanation: 'الأرقام التي تنتهي بـ 3 (ما عدا 13) تأخذ اللاحقة (rd) مثل (23rd).'
+            },
+            {
+                id: 44, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الكتابة الإملائية الصحيحة للرقم (40):',
+                q: 'How do you write the number 40 in words?',
+                options: ['forty', 'fourty', 'fortieth', 'fourteen'],
+                correct: 'forty',
+                explanation: 'الرقم 40 يُكتب (forty) بدون حرف (u)، بعكس الرقم 4 (four).'
+            },
+            {
+                id: 45, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'ما هو الرقم الترتيبي الصحيح للرقم (2)؟',
+                q: 'What is the correct spelling for 2nd?',
+                options: ['twoth', 'twond', 'second', 'two'],
+                correct: 'second',
+                explanation: 'الترتيب الثاني (2nd) يُكتب (second).'
+            },
+            {
+                id: 46, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الكتابة الصحيحة للرقم الترتيبي (9th):',
+                q: 'How is 9th spelled correctly?',
+                options: ['nineth', 'ninth', 'ninety', 'nineteenth'],
+                correct: 'ninth',
+                explanation: 'عند كتابة (9th) نحذف حرف (e) من نهاية (nine) لتصبح (ninth).'
+            },
+            {
+                id: 47, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الاختصار الصحيح لكلمة "twenty-first":',
+                q: 'Choose the correct short form for "twenty-first":',
+                options: ['21th', '21nd', '21rd', '21st'],
+                correct: '21st',
+                explanation: 'لأنها تنتهي بكلمة (first)، فإنها تأخذ (st) فتصبح (21st).'
+            },
+            {
+                id: 48, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الكتابة الصحيحة للرقم الترتيبي (5th):',
+                q: 'What is the ordinal form of 5?',
+                options: ['fifth', 'fiveth', 'fifty', 'fifteen'],
+                correct: 'fifth',
+                explanation: 'الرقم 5 (five) يتحول في الترتيب إلى (fifth).'
+            },
+            {
+                id: 49, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'ما هو الرقم الذي يمثل "one thousand"؟',
+                q: 'Which number is "one thousand"?',
+                options: ['100', '10,000', '1,000', '100th'],
+                correct: '1,000',
+                explanation: 'كلمة (one hundred) تعني 100، أما (one thousand) فتعني 1,000.'
+            },
+            {
+                id: 50, topic: '5', topicName: 'الأرقام والترتيب',
+                prompt: 'اختر الكتابة الصحيحة للرقم الترتيبي (20th):',
+                q: 'How do you spell 20th?',
+                options: ['twentyth', 'twentieth', 'twentith', 'twenty'],
+                correct: 'twentieth',
+                explanation: 'الأرقام المنتهية بـ (y) مثل (twenty) نبدل فيها الـ (y) بـ (ie) ثم نضيف (th) فتصبح (twentieth).'
+            },
+
+            // --- IMAGE 6: Verb 'be' (Contractions) & Possessive Adjectives (my, your, his, her) ---
+            {
+                id: 51, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر الاختصار الصحيح لـ (He + is):',
+                q: 'What is the correct contraction for "He is Bill"?',
+                options: ["He's Bill.", "His Bill.", "He're Bill.", "Hes' Bill."],
+                correct: "He's Bill.",
+                explanation: 'اختصار (He is) هو (He\'s) باستخدام الفاصلة العليا (apostrophe)، أما (His) فهي صفة ملكية.'
+            },
+            {
+                id: 52, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر صفة الملكية المناسبة للمذكر:',
+                q: 'This is my brother. _____ name is George.',
+                options: ['Her', 'His', 'My', 'Your'],
+                correct: 'His',
+                explanation: 'نستخدم صفة الملكية (His) للمفرد المذكر (اسمه جورج).'
+            },
+            {
+                id: 53, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر الفعل المساعد المختصر المناسب للجمع:',
+                q: '_____ friends. (We + are)',
+                options: ["We's", "We'm", "We're", "Our"],
+                correct: "We're",
+                explanation: 'اختصار (We + are) هو (We\'re).'
+            },
+            {
+                id: 54, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر صفة الملكية المناسبة للمخاطب:',
+                q: 'Hello! Is _____ name Mona?',
+                options: ['your', 'you', "you're", 'his'],
+                correct: 'your',
+                explanation: 'للسؤال عن اسم الشخص المخاطب نستخدم صفة الملكية (your) قبل كلمة (name).'
+            },
+            {
+                id: 55, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'ماذا تسمى العلامة ( \' ) في الاختصارات مثل I\'m و She\'s؟',
+                q: 'What is the punctuation mark (\') in "I\'m" called?',
+                options: ['Comma', 'Period', 'Apostrophe', 'Question mark'],
+                correct: 'Apostrophe',
+                explanation: 'تسمى الفاصلة العليا (apostrophe) وتُستخدم في الاختصارات (contractions) لتدل على وجود حرف محذوف.'
+            },
+            {
+                id: 56, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر الاختصار الصحيح لـ (They + are):',
+                q: '_____ students in my school. (They + are)',
+                options: ['Their', "They're", 'There', "They's"],
+                correct: "They're",
+                explanation: 'اختصار (They are) هو (They\'re)، ويجب التفريق بينها وبين (Their) للملكية.'
+            },
+            {
+                id: 57, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر صفة الملكية المناسبة للمتكلم:',
+                q: 'Hi! _____ name is Fatima.',
+                options: ['I', "I'm", 'My', 'Me'],
+                correct: 'My',
+                explanation: 'للتعريف باسمك تستخدم صفة الملكية (My) متبوعة بكلمة (name).'
+            },
+            {
+                id: 58, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر صفة الملكية المناسبة للمؤنث:',
+                q: 'She is my sister. _____ name is Mary.',
+                options: ['His', 'Her', "She's", 'Your'],
+                correct: 'Her',
+                explanation: 'نستخدم صفة الملكية (Her) للمفرد المؤنث (اسمها ماري).'
+            },
+            {
+                id: 59, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر الجملة الصحيحة قواعدياً:',
+                q: 'Which sentence is correct?',
+                options: [
+                    "I'm John.",
+                    "I're John.",
+                    "I's John.",
+                    "My John."
+                ],
+                correct: "I'm John.",
+                explanation: 'الضمير (I) يأخذ الفعل (am) واختصاره (I\'m).'
+            },
+            {
+                id: 60, topic: '6', topicName: 'الفعل be وصفات الملكية',
+                prompt: 'اختر الكلمة المناسبة لإكمال الجملة:',
+                q: '_____ Sue. (You + are)',
+                options: ['Your', "You's", "You're", 'Yours'],
+                correct: "You're",
+                explanation: 'اختصار (You + are) هو (You\'re).'
+            }
+        ];
+
+        // Rewards Cards (Fun & Game-Enhancing)
+        const rewardCards = [
+            {
+                title: 'كنز النقاط الذهبية! 💰',
+                desc: 'حظك رائع! حصلت على +20 نقطة مجانية تضاف مباشرة إلى رصيدك!',
+                action: () => { score += 20; }
+            },
+            {
+                title: 'بطاقة المضاعفة السحرية! ⚡',
+                desc: 'السؤال القادم الذي ستجيب عليه بشكل صحيح سيمنحك ضعف النقاط (20 نقطة بدلاً من 10)!',
+                action: () => { doubleNextPoints = true; }
+            },
+            {
+                title: 'درع الحماية الملكي! 🛡️',
+                desc: 'مبارك! حصلت على +15 نقطة تشجيعية لتركيزك العالي في اللعبة!',
+                action: () => { score += 15; }
+            },
+            {
+                title: 'هدية التفوق! 🌟',
+                desc: 'أنت بطل اللغة الإنجليزية! تضاف +25 نقطة إلى مجموعك فوراً!',
+                action: () => { score += 25; }
+            },
+            {
+                title: 'دفعة حماسية! 🚀',
+                desc: 'تقدم ممتاز! احصل على +10 نقاط إضافية واستعد للبطاقة التالية!',
+                action: () => { score += 10; }
+            },
+            {
+                title: 'تاج المعرفة! 👑',
+                desc: 'مكافأة خاصة: +30 نقطة تضاف لرصيدك لأنك تستحق الأفضل!',
+                action: () => { score += 30; }
+            },
+            {
+                title: 'نجمة الحظ السعيد! 🌠',
+                desc: 'ابتسم لك الحظ! حصلت على +15 نقطة ومضاعفة للسؤال القادم!',
+                action: () => { score += 15; doubleNextPoints = true; }
+            },
+            {
+                title: 'صندوق المفاجآت! 🎉',
+                desc: 'مفاجأة سارة! تم إضافة +20 نقطة إلى رصيدك الحالي!',
+                action: () => { score += 20; }
+            },
+            {
+                title: 'وسام المثابرة! 🏅',
+                desc: 'استمر في هذا الأداء الرائع! لك +15 نقطة هدية!',
+                action: () => { score += 15; }
+            }
+        ];
+
+        // Penalty Cards (Fun, Safe, Educational & Engaging)
+        const penaltyCards = [
+            {
+                title: 'عاصفة النقاط! 🌪️',
+                desc: 'يا للأسف! طارت منك 10 نقاط في العاصفة. حاول تعويضها في الأسئلة القادمة!',
+                action: () => { score = Math.max(0, score - 10); }
+            },
+            {
+                title: 'تحدي التهجئة السريع! 🗣️',
+                desc: 'عقاب خفيف: انطق بصوت عالٍ أيام الأسبوع باللغة الإنجليزية (Sunday إلى Saturday) قبل المتابعة، وخصم 5 نقاط!',
+                action: () => { score = Math.max(0, score - 5); }
+            },
+            {
+                title: 'فخ الكسل! 🕸️',
+                desc: 'وقعت في الفخ! تم خصم 15 نقطة من رصيدك. ركّز جيداً في البطاقات القادمة!',
+                action: () => { score = Math.max(0, score - 15); }
+            },
+            {
+                title: 'تحدي الأرقام العكسي! 🔢',
+                desc: 'عقاب مرح: عدّ تنازلياً من 10 إلى 1 باللغة الإنجليزية بصوت مسموع (Ten, Nine, Eight...) ثم اضغط للمتابعة!',
+                action: () => { /* Fun physical/verbal task, no point loss */ }
+            },
+            {
+                title: 'ضريبة الحظ! 💸',
+                desc: 'سوء حظ! خسرت 10 نقاط من رصيدك. لا تستسلم، الفرصة ما زالت أمامك!',
+                action: () => { score = Math.max(0, score - 10); }
+            },
+            {
+                title: 'تحدي التحية الإنجليزية! 👋',
+                desc: 'عقاب لطيف: عرّف عن نفسك بجملتين بالإنجليزية بصوت مسموع (My name is... I am... years old) قبل سحب البطاقة التالية!',
+                action: () => { /* Fun speaking task */ }
+            },
+            {
+                title: 'قنبلة النقاط الصغيرة! 💥',
+                desc: 'انفجرت البطاقة! خسرت 5 نقاط فقط. حظاً أوفر في السحبة القادمة!',
+                action: () => { score = Math.max(0, score - 5); }
+            },
+            {
+                title: 'تحدي التصفيق والتركيز! 👏',
+                desc: 'عقاب حركي: صفّق 5 مرات وقل بصوت عالٍ "I love English!" لاستعادة نشاطك، مع خصم 5 نقاط!',
+                action: () => { score = Math.max(0, score - 5); }
+            },
+            {
+                title: 'تراجع تكتيكي! 🔙',
+                desc: 'تراجعت خطوة للوراء! تم خصم 10 نقاط، أثبت جدارتك في السؤال القادم!',
+                action: () => { score = Math.max(0, score - 10); }
+            }
+        ];
+
+        // Game State
+        let deck = [];
+        let score = 0;
+        let correctAnswersCount = 0;
+        let totalQuestionsInMode = 60;
+        let currentFilter = 'all';
+        let doubleNextPoints = false;
+        let currentCard = null;
+        let answeredCurrent = false;
+
+        // Shuffle Helper (Fisher-Yates)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Initialize or Reset Deck based on Filter
+        function buildDeck(filter) {
+            let filteredQuestions = filter === 'all' 
+                ? [...allQuestions] 
+                : allQuestions.filter(q => q.topic === filter);
+
+            totalQuestionsInMode = filteredQuestions.length;
+
+            // Create question cards with randomized option orders
+            const qCards = filteredQuestions.map(q => ({
+                type: 'question',
+                data: {
+                    ...q,
+                    shuffledOptions: shuffleArray(q.options) // Ensures correct answer is NOT always a, b, or c!
+                }
+            }));
+
+            // Add proportional rewards and penalties (e.g., 3 rewards & 3 penalties per 10 questions)
+            const numSpecials = filter === 'all' ? 9 : 3;
+            const rCards = shuffleArray(rewardCards).slice(0, numSpecials).map(r => ({
+                type: 'reward',
+                data: r
+            }));
+            const pCards = shuffleArray(penaltyCards).slice(0, numSpecials).map(p => ({
+                type: 'penalty',
+                data: p
+            }));
+
+            deck = shuffleArray([...qCards, ...rCards, ...pCards]);
+        }
+
+        function setTopicFilter(filter) {
+            currentFilter = filter;
+            
+            // Update UI buttons
+            document.querySelectorAll('.topic-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-500', 'text-indigo-950', 'font-bold', 'shadow-md');
+                btn.classList.add('bg-white/10', 'text-white', 'font-semibold');
+            });
+            const activeBtn = document.getElementById(`btn-${filter}`);
+            activeBtn.classList.remove('bg-white/10', 'text-white', 'font-semibold');
+            activeBtn.classList.add('bg-amber-500', 'text-indigo-950', 'font-bold', 'shadow-md');
+
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 0;
+            correctAnswersCount = 0;
+            doubleNextPoints = false;
+            buildDeck(currentFilter);
+            updateStatsUI();
+
+            document.getElementById('gameOverArea').classList.add('hidden');
+            document.getElementById('cardDisplayArea').classList.add('hidden');
+            document.getElementById('deckArea').classList.remove('hidden');
+            document.getElementById('activeEffectBanner').classList.add('hidden');
+        }
+
+        function updateStatsUI() {
+            document.getElementById('scoreDisplay').textContent = score;
+            document.getElementById('remainingDisplay').textContent = deck.length;
+            document.getElementById('correctCountDisplay').textContent = `${correctAnswersCount} / ${totalQuestionsInMode}`;
+            
+            if (doubleNextPoints) {
+                document.getElementById('activeEffectBanner').classList.remove('hidden');
+            } else {
+                document.getElementById('activeEffectBanner').classList.add('hidden');
+            }
+        }
+
+        function drawCard() {
+            if (deck.length === 0) {
+                showGameOver();
+                return;
+            }
+
+            currentCard = deck.pop();
+            answeredCurrent = false;
+            updateStatsUI();
+
+            // Hide deck, show card area
+            document.getElementById('deckArea').classList.add('hidden');
+            const displayArea = document.getElementById('cardDisplayArea');
+            displayArea.classList.remove('hidden');
+            // Re-trigger animation
+            displayArea.classList.remove('pop-in');
+            void displayArea.offsetWidth;
+            displayArea.classList.add('pop-in');
+
+            // Hide all card types first
+            document.getElementById('questionCard').classList.add('hidden');
+            document.getElementById('rewardCard').classList.add('hidden');
+            document.getElementById('penaltyCard').classList.add('hidden');
+
+            if (currentCard.type === 'question') {
+                renderQuestionCard(currentCard.data);
+            } else if (currentCard.type === 'reward') {
+                renderRewardCard(currentCard.data);
+            } else if (currentCard.type === 'penalty') {
+                renderPenaltyCard(currentCard.data);
+            }
+        }
+
+        function renderQuestionCard(qData) {
+            const qCard = document.getElementById('questionCard');
+            qCard.classList.remove('hidden');
+
+            document.getElementById('qTopicBadge').textContent = qData.topicName;
+            document.getElementById('qPointsValue').textContent = doubleNextPoints ? '20 (مضاعفة!)' : '10';
+            document.getElementById('qArabicPrompt').textContent = qData.prompt;
+            document.getElementById('qText').textContent = qData.q;
+
+            // Reset feedback & next button
+            const feedbackBox = document.getElementById('feedbackBox');
+            feedbackBox.classList.add('hidden');
+            document.getElementById('nextCardBtn').classList.add('hidden');
+
+            // Render Options
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+
+            const letters = ['A', 'B', 'C', 'D'];
+            qData.shuffledOptions.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full text-left en-text bg-white/10 hover:bg-white/20 border-2 border-white/20 rounded-2xl p-4 font-semibold text-lg transition flex items-center justify-between group';
+                btn.innerHTML = `
+                    <span>${optText}</span>
+                    <span class="w-8 h-8 rounded-full bg-indigo-950/60 text-amber-300 text-sm font-bold flex items-center justify-center border border-white/10 group-hover:bg-amber-400 group-hover:text-indigo-950 transition">
+                        ${letters[index]}
+                    </span>
+                `;
+                btn.onclick = () => checkAnswer(btn, optText, qData);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedBtn, selectedText, qData) {
+            if (answeredCurrent) return;
+            answeredCurrent = true;
+
+            const isCorrect = selectedText === qData.correct;
+            const allOptionBtns = document.querySelectorAll('.option-btn');
+
+            // Disable all buttons and highlight correct/incorrect
+            allOptionBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-white/20');
+                const btnText = btn.querySelector('span:first-child').textContent;
+
+                if (btnText === qData.correct) {
+                    btn.classList.remove('bg-white/10', 'border-white/20');
+                    btn.classList.add('bg-emerald-600/80', 'border-emerald-300', 'text-white');
+                } else if (btn === selectedBtn && !isCorrect) {
+                    btn.classList.remove('bg-white/10', 'border-white/20');
+                    btn.classList.add('bg-rose-600/80', 'border-rose-300', 'text-white');
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackExplanation = document.getElementById('feedbackExplanation');
+
+            feedbackBox.classList.remove('hidden', 'bg-emerald-950/80', 'border-emerald-400', 'bg-rose-950/80', 'border-rose-400');
+            feedbackBox.classList.add('border');
+
+            if (isCorrect) {
+                const earned = doubleNextPoints ? 20 : 10;
+                score += earned;
+                correctAnswersCount++;
+                doubleNextPoints = false;
+
+                feedbackBox.classList.add('bg-emerald-950/80', 'border-emerald-400', 'text-emerald-100');
+                feedbackTitle.textContent = `إجابة صحيحة! أحسنت (+${earned} نقاط) 🎉`;
+            } else {
+                doubleNextPoints = false; // Reset multiplier on wrong answer
+                feedbackBox.classList.add('bg-rose-950/80', 'border-rose-400', 'text-rose-100');
+                feedbackTitle.textContent = 'إجابة خاطئة! راجع القاعدة 💡';
+            }
+
+            feedbackExplanation.textContent = qData.explanation;
+            updateStatsUI();
+
+            document.getElementById('nextCardBtn').classList.remove('hidden');
+        }
+
+        function renderRewardCard(rData) {
+            const rCard = document.getElementById('rewardCard');
+            rCard.classList.remove('hidden');
+            document.getElementById('rewardTitle').textContent = rData.title;
+            document.getElementById('rewardDesc').textContent = rData.desc;
+        }
+
+        function applyRewardAndContinue() {
+            if (currentCard && currentCard.type === 'reward') {
+                currentCard.data.action();
+                updateStatsUI();
+            }
+            returnToDeck();
+        }
+
+        function renderPenaltyCard(pData) {
+            const pCard = document.getElementById('penaltyCard');
+            pCard.classList.remove('hidden');
+            document.getElementById('penaltyTitle').textContent = pData.title;
+            document.getElementById('penaltyDesc').textContent = pData.desc;
+        }
+
+        function applyPenaltyAndContinue() {
+            if (currentCard && currentCard.type === 'penalty') {
+                currentCard.data.action();
+                updateStatsUI();
+            }
+            returnToDeck();
+        }
+
+        function returnToDeck() {
+            document.getElementById('cardDisplayArea').classList.add('hidden');
+            if (deck.length === 0) {
+                showGameOver();
+            } else {
+                document.getElementById('deckArea').classList.remove('hidden');
+            }
+        }
+
+        function showGameOver() {
+            document.getElementById('deckArea').classList.add('hidden');
+            document.getElementById('cardDisplayArea').classList.add('hidden');
+            document.getElementById('gameOverArea').classList.remove('hidden');
+            document.getElementById('finalScore').textContent = `${score} نقطة`;
+            document.getElementById('finalStats').textContent = `أجبت بشكل صحيح على ${correctAnswersCount} من ${totalQuestionsInMode} سؤال`;
+        }
+
+        // Start Game on Load
+        window.onload = () => {
+            buildDeck('all');
+            updateStatsUI();
+        };
+    </script>
+</body>
+</html>
